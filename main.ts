@@ -10,7 +10,7 @@
 // watching. The pitch sounds like a real product because it has a name, a
 // price, a feature list and a mission; it is perfectly pointless because the
 // answer changes nothing and the evidence is darkness.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ENTRY_LINE =
@@ -43,5 +43,16 @@ if (ENTRY_LINE !== ENTRY_LINE.trim() || !ENTRY_LINE.endsWith(".")) {
 
 const outputDir = process.env.OUTPUT_DIR ?? "/output";
 mkdirSync(outputDir, { recursive: true });
-writeFileSync(join(outputDir, "entry.txt"), ENTRY_LINE, "utf8");
-console.log(`wrote ${charCount} chars to ${join(outputDir, "entry.txt")}`);
+const outPath = join(outputDir, "entry.txt");
+writeFileSync(outPath, ENTRY_LINE, "utf8");
+
+// Read-back guard: the file the judge reads must be byte-identical to the
+// pitch above. A silent truncation or encoding surprise would hand the
+// judge a different sentence, so fail loudly instead of passing a wrong one.
+const written = readFileSync(outPath, "utf8");
+if (written !== ENTRY_LINE) {
+  throw new Error(
+    `entry.txt mismatch: wrote ${charCount} chars, read back ${[...written].length}`,
+  );
+}
+console.log(`wrote ${charCount} chars to ${outPath}`);
